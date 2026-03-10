@@ -1,0 +1,178 @@
+:root {
+  --pink: #FF6B8A;
+  --pink-light: #FFB4C8;
+  --pink-bg: #FFF0F3;
+  --coral: #FF8A80;
+  --warm-white: #FFFAF7;
+  --text: #4A3B3B;
+  --text-light: #8B7E7E;
+  --shadow: 0 2px 12px rgba(255, 107, 138, 0.15);
+  --shadow-lg: 0 4px 20px rgba(255, 107, 138, 0.2);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--warm-white);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+input, textarea {
+  font-family: inherit;
+  outline: none;
+  border: none;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.app-container {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+  padding-bottom: 70px;
+}
+
+/* 공통 버튼 */
+.btn-primary {
+  background: linear-gradient(135deg, var(--pink), var(--coral));
+  color: white;
+  padding: 14px 32px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 500;
+  box-shadow: var(--shadow);
+  transition: all 0.2s;
+  width: 100%;
+}
+.btn-primary:active {
+  transform: scale(0.97);
+}
+
+.btn-secondary {
+  background: white;
+  color: var(--pink);
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 2px solid var(--pink-light);
+  transition: all 0.2s;
+}
+
+/* 카드 */
+.card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+
+/* 하단 탭 */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  background: white;
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0 env(safe-area-inset-bottom, 8px);
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+  z-index: 100;
+  border-radius: 20px 20px 0 0;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 16px;
+  background: none;
+  color: var(--text-light);
+  font-size: 11px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.tab-item.active {
+  color: var(--pink);
+}
+.tab-item .tab-icon {
+  font-size: 22px;
+}
+
+/* 페이지 헤더 */
+.page-header {
+  padding: 20px 20px 12px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* 입력 필드 */
+.input-field {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--pink-bg);
+  font-size: 15px;
+  color: var(--text);
+  transition: box-shadow 0.2s;
+}
+.input-field:focus {
+  box-shadow: 0 0 0 2px var(--pink-light);
+}
+.input-field::placeholder {
+  color: var(--text-light);
+}
+
+/* 모달 오버레이 */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+.modal-content {
+  background: white;
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-lg);
+}
+
+/* 페이드 인 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
