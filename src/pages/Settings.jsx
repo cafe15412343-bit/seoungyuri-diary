@@ -4,7 +4,7 @@ import { db } from '../firebase'
 import { doc, updateDoc } from 'firebase/firestore'
 
 export default function Settings() {
-  const { user, couple, coupleId } = useContext(AppContext)
+  const { user, couple, coupleId, logout } = useContext(AppContext)
   const partnerUid = couple?.users?.find(u => u !== user.uid)
 
   const [startDate, setStartDate] = useState(couple?.startDate || '')
@@ -75,8 +75,17 @@ export default function Settings() {
           </p>
         </div>
 
+        <div className="card">
+          <button
+            onClick={() => { if (confirm('로그아웃하면 이 기기에서 커플 데이터 연결이 해제됩니다. 코드만 있으면 다시 접속할 수 있어요.')) logout() }}
+            style={{ width: '100%', padding: '12px', background: 'none', border: '1px solid #e74c3c', color: '#e74c3c', borderRadius: 'var(--radius-sm)', fontSize: 14, fontWeight: 500 }}
+          >
+            🔓 이 기기에서 로그아웃
+          </button>
+        </div>
+
         <div className="card" style={{ textAlign: 'center', color: 'var(--text-light)', fontSize: 13 }}>
-          커플 다이어리 v1.0 💕<br />
+          커플 다이어리 v1.1 💕<br />
           Made with ❤️
         </div>
       </div>

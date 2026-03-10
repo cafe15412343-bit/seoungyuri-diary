@@ -13,7 +13,7 @@ export const AppContext = createContext()
 
 export default function App() {
   const { user, loading: authLoading } = useAuth()
-  const { couple, coupleId, loading: coupleLoading, generateCode, joinWithCode } = useCouple(user)
+  const { couple, coupleId, loading: coupleLoading, generateCode, joinWithCode, loginWithCode, logout } = useCouple(user)
 
   if (authLoading || coupleLoading) {
     return (
@@ -29,7 +29,7 @@ export default function App() {
   const needsOnboarding = !couple || couple.users.length < 2
 
   return (
-    <AppContext.Provider value={{ user, couple, coupleId, generateCode, joinWithCode }}>
+    <AppContext.Provider value={{ user, couple, coupleId, generateCode, joinWithCode, loginWithCode, logout }}>
       <div className="app-container">
         <Routes>
           <Route path="/onboarding" element={<Onboarding />} />
