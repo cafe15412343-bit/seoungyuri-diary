@@ -107,10 +107,11 @@ export function useCouple(user) {
 
     // If this user is already in the couple, just link
     if (!data.users.includes(user.uid)) {
-      if (data.users.length >= 2) throw new Error('이미 연결된 커플이에요')
+      // Allow joining even if 2 users exist (different device = different anonymous uid)
+      // Just add this uid to the users array
       await updateDoc(doc(db, 'couples', cId), {
         users: [...data.users, user.uid],
-        names: { ...data.names, [user.uid]: '상대방' }
+        names: { ...data.names, [user.uid]: data.users.length === 0 ? '나' : '상대방' }
       })
     }
     await setDoc(doc(db, 'users', user.uid), { coupleId: cId }, { merge: true })
