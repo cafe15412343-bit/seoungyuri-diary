@@ -5,9 +5,11 @@ import { doc, onSnapshot, setDoc, updateDoc, collection, query, orderBy, limit, 
 import { getDday, getUpcomingAnniversaries, formatDate } from '../utils/dday'
 import { getRandomGreeting } from '../utils/greetings'
 import { getTodayFortune } from '../utils/fortune'
+import { useNavigate } from 'react-router-dom'
 import HeartAnimation from '../components/HeartAnimation'
 
 export default function Home() {
+  const navigate = useNavigate()
   const { user, couple, coupleId } = useContext(AppContext)
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState({})
@@ -133,12 +135,20 @@ export default function Home() {
     <div className="fade-in">
       <HeartAnimation trigger={heartTrigger} />
 
-      <div className="page-header">
-        {myAnimal && partnerAnimal ? (
-          <>{myAnimal} {myName} & {partnerName} {partnerAnimal}</>
-        ) : (
-          <>💕 {myName} & {partnerName}</>
-        )}
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>
+          {myAnimal && partnerAnimal ? (
+            <>{myAnimal} {myName} & {partnerName} {partnerAnimal}</>
+          ) : (
+            <>💕 {myName} & {partnerName}</>
+          )}
+        </span>
+        <button
+          onClick={() => navigate('/settings')}
+          style={{ background: 'none', fontSize: 22, color: 'var(--text-light)', padding: 4 }}
+        >
+          ⚙️
+        </button>
       </div>
 
       <div style={{ padding: '0 20px' }}>

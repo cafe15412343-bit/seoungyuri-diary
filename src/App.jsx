@@ -8,6 +8,7 @@ import Diary from './pages/Diary'
 import Calendar from './pages/Calendar'
 import Settings from './pages/Settings'
 import RandomPick from './pages/RandomPick'
+import Promises from './pages/Promises'
 import Album from './pages/Album'
 import TabBar from './components/TabBar'
 import CherryBlossoms from './components/CherryBlossoms'
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Home />} />
           <Route path="/diary" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Diary />} />
+          <Route path="/promises" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Promises />} />
           <Route path="/pick" element={needsOnboarding ? <Navigate to="/onboarding" /> : <RandomPick />} />
           <Route path="/calendar" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Calendar />} />
           <Route path="/album" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Album />} />
