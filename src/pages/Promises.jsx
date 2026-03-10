@@ -1,6 +1,6 @@
 import { useState, useContext, useEffect } from 'react'
 import { AppContext } from '../App'
-import { usePromises, CATEGORIES } from '../hooks/usePromises'
+import { usePromises, CATEGORIES, OWNER_TYPES } from '../hooks/usePromises'
 import HeartAnimation from '../components/HeartAnimation'
 
 export default function Promises() {
@@ -14,9 +14,10 @@ export default function Promises() {
   const [showAdd, setShowAdd] = useState(false)
   const [newName, setNewName] = useState('')
   const [newCategory, setNewCategory] = useState('etc')
+  const [newOwner, setNewOwner] = useState('both')
   const [heartTrigger, setHeartTrigger] = useState(0)
   const [celebMsg, setCelebMsg] = useState(null)
-  const [editingId, setEditingId] = useState(null)
+  const [activeTab, setActiveTab] = useState('both') // 'both', 'me', 'partner'
 
   const myName = couple?.names?.[user.uid] || '나'
   const partnerName = couple?.names?.[partnerUid] || '자기'
@@ -30,8 +31,18 @@ export default function Promises() {
   useEffect(() => {
     if (promises.length === 0 || !partnerUid) return
     const allDone = promises.every(p => {
+      const owner = p.owner || 'both'
       const c = checks[p.id]
-      return c?.[user.uid] && c?.[partnerUid]
+      if (owner === 'both') return c?.[user.uid] && c?.[partnerUid]
+      if (owner === 'me') {
+        const targetUid = p.createdBy === user.uid ? user.uid : partnerUid
+        return c?.[targetUid]
+      }
+      if (owner === 'partner') {
+        const targetUid = p.createdBy === user.uid ? partnerUid : user.uid
+        return c?.[targetUid]
+      }
+      return false
     })
     if (allDone && promises.length > 0) {
       setCelebMsg('오늘도 약속 완료! 💕🎉')
@@ -43,16 +54,16 @@ export default function Promises() {
     const wasChecked = !!checks[promiseId]?.[user.uid]
     await toggleCheck(promiseId)
     if (!wasChecked) {
-      // Just checked - show hearts
       setHeartTrigger(t => t + 1)
     }
   }
 
   const handleAdd = async () => {
     if (!newName.trim()) return
-    await addPromise(newName, newCategory)
+    await addPromise(newName, newCategory, newOwner)
     setNewName('')
     setNewCategory('etc')
+    setNewOwner('both')
     setShowAdd(false)
   }
 
@@ -62,7 +73,21 @@ export default function Promises() {
     }
   }
 
-  const getCategoryInfo = (catId) => CATEGORIES.find(c => c.id === catId) || CATEGORIES[3]
+  // Categorize promises by owner type relative to current user
+  const getOwnerType = (p) => {
+    const owner = p.owner || 'both'
+    if (owner === 'both') return 'both'
+    if (owner === 'me') return p.createdBy === user.uid ? 'me' : 'partner'
+    if (owner === 'partner') return p.createdBy === user.uid ? 'partner' : 'me'
+    return 'both'
+  }
+
+  const filteredPromises = promises.filter(p => getOwnerType(p) === activeTab)
+
+  // Count per tab
+  const countBoth = promises.filter(p => getOwnerType(p) === 'both').length
+  const countMe = promises.filter(p => getOwnerType(p) === 'me').length
+  const countPartner = promises.filter(p => getOwnerType(p) === 'partner').length
 
   if (loading) {
     return (
@@ -73,14 +98,130 @@ export default function Promises() {
     )
   }
 
-  // Group by category
-  const grouped = {}
-  CATEGORIES.forEach(c => { grouped[c.id] = [] })
-  promises.forEach(p => {
-    const cat = p.category || 'etc'
-    if (!grouped[cat]) grouped[cat] = []
-    grouped[cat].push(p)
-  })
+  const renderPromiseCard = (p) => {
+    const ownerType = getOwnerType(p)
+    const myCheck = !!checks[p.id]?.[user.uid]
+    const partnerCheck = !!checks[p.id]?.[partnerUid]
+    const streak = getStreak(p.id)
+
+    let isDone = false
+    let canCheck = true
+    let statusText = ''
+
+    if (ownerType === 'both') {
+      isDone = myCheck && partnerCheck
+      statusText = `${myAnimal || myName} ${myCheck ? '✅' : '❌'} / ${partnerAnimal || partnerName} ${partnerCheck ? '✅' : '❌'}`
+    } else if (ownerType === 'me') {
+      isDone = myCheck
+      statusText = myCheck ? '완료! 💕' : '아직 안 했어요'
+    } else {
+      isDone = partnerCheck
+      canCheck = false // 상대방 약속은 내가 체크 못함
+      statusText = partnerCheck ? `${partnerAnimal || partnerName} 완료! 💕` : `${partnerAnimal || partnerName} 아직...`
+    }
+
+    return (
+      <div
+        key={p.id}
+        className="card"
+        style={{
+          padding: '14px 16px',
+          marginBottom: 10,
+          background: isDone
+            ? 'linear-gradient(135deg, #fff0f3, #fce4ec)'
+            : 'white',
+          border: isDone ? '1px solid var(--pink-light)' : 'none',
+          transition: 'all 0.3s',
+        }}
+      >
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <div style={{ flex: 1 }}>
+            <div style={{
+              fontWeight: 600,
+              fontSize: 15,
+              color: isDone ? 'var(--pink)' : 'var(--text)',
+            }}>
+              {p.name}
+              {streak > 0 && (
+                <span style={{
+                  marginLeft: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: '#ff6d00',
+                }}>
+                  🔥 {streak}일
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 4 }}>
+              {statusText}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {canCheck && (
+              <button
+                onClick={() => handleToggle(p.id)}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: '50%',
+                  background: myCheck
+                    ? 'linear-gradient(135deg, var(--pink), var(--coral))'
+                    : 'var(--pink-bg)',
+                  fontSize: 22,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.3s',
+                  transform: myCheck ? 'scale(1)' : 'scale(0.9)',
+                  boxShadow: myCheck ? 'var(--shadow)' : 'none',
+                }}
+              >
+                {myCheck ? '💗' : '🤍'}
+              </button>
+            )}
+            {ownerType === 'partner' && (
+              <div style={{
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                background: partnerCheck
+                  ? 'linear-gradient(135deg, var(--pink), var(--coral))'
+                  : 'var(--pink-bg)',
+                fontSize: 22,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                {partnerCheck ? '💗' : '🤍'}
+              </div>
+            )}
+            <button
+              onClick={() => handleDelete(p.id)}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                background: 'none',
+                fontSize: 14,
+                color: 'var(--text-light)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fade-in">
@@ -100,7 +241,6 @@ export default function Promises() {
             fontWeight: 700,
             color: 'var(--pink)',
             marginBottom: 16,
-            animation: 'fadeIn 0.5s ease',
           }}>
             {celebMsg}
           </div>
@@ -134,7 +274,6 @@ export default function Promises() {
                weeklyReport.rate >= 50 ? '조금만 더 힘내자! 💪' :
                '이번 주도 파이팅! 🌟'}
             </div>
-            {/* Progress bar */}
             <div style={{
               marginTop: 12,
               height: 8,
@@ -153,124 +292,64 @@ export default function Promises() {
           </div>
         )}
 
-        {/* Promise list by category */}
-        {CATEGORIES.map(cat => {
-          const items = grouped[cat.id]
-          if (!items || items.length === 0) return null
-          return (
-            <div key={cat.id} style={{ marginBottom: 8 }}>
-              <div style={{
+        {/* Tab selector: 함께 / 나 / 자기 */}
+        <div style={{
+          display: 'flex',
+          gap: 8,
+          marginBottom: 16,
+          marginTop: 8,
+        }}>
+          {[
+            { id: 'both', label: `💑 함께`, count: countBoth },
+            { id: 'me', label: `${myAnimal || '🙋'} ${myName}`, count: countMe },
+            { id: 'partner', label: `${partnerAnimal || '💕'} ${partnerName}`, count: countPartner },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                flex: 1,
+                padding: '10px 8px',
+                borderRadius: 16,
                 fontSize: 13,
-                fontWeight: 600,
-                color: 'var(--text-light)',
-                padding: '8px 4px 4px',
-              }}>
-                {cat.icon} {cat.label}
-              </div>
-              {items.map(p => {
-                const myCheck = !!checks[p.id]?.[user.uid]
-                const partnerCheck = !!checks[p.id]?.[partnerUid]
-                const streak = getStreak(p.id)
-                const bothDone = myCheck && partnerCheck
+                fontWeight: activeTab === tab.id ? 700 : 500,
+                background: activeTab === tab.id
+                  ? 'linear-gradient(135deg, var(--pink), var(--coral))'
+                  : 'var(--pink-bg)',
+                color: activeTab === tab.id ? 'white' : 'var(--text)',
+                transition: 'all 0.2s',
+                position: 'relative',
+              }}
+            >
+              {tab.label}
+              {tab.count > 0 && (
+                <span style={{
+                  marginLeft: 4,
+                  fontSize: 11,
+                  opacity: 0.8,
+                }}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
 
-                return (
-                  <div
-                    key={p.id}
-                    className="card"
-                    style={{
-                      padding: '14px 16px',
-                      marginBottom: 10,
-                      background: bothDone
-                        ? 'linear-gradient(135deg, #fff0f3, #fce4ec)'
-                        : 'white',
-                      border: bothDone ? '1px solid var(--pink-light)' : 'none',
-                      transition: 'all 0.3s',
-                    }}
-                  >
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}>
-                      {/* Promise name + streak */}
-                      <div style={{ flex: 1 }}>
-                        <div style={{
-                          fontWeight: 600,
-                          fontSize: 15,
-                          color: bothDone ? 'var(--pink)' : 'var(--text)',
-                        }}>
-                          {p.name}
-                          {streak > 0 && (
-                            <span style={{
-                              marginLeft: 8,
-                              fontSize: 12,
-                              fontWeight: 700,
-                              color: '#ff6d00',
-                            }}>
-                              🔥 {streak}일
-                            </span>
-                          )}
-                        </div>
-                        {/* Status text */}
-                        <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 4 }}>
-                          {myAnimal || '나'} {myCheck ? '✅' : '❌'} / {partnerAnimal || partnerName} {partnerCheck ? '✅' : '❌'}
-                        </div>
-                      </div>
-
-                      {/* Check toggle + delete */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <button
-                          onClick={() => handleToggle(p.id)}
-                          style={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: '50%',
-                            background: myCheck
-                              ? 'linear-gradient(135deg, var(--pink), var(--coral))'
-                              : 'var(--pink-bg)',
-                            fontSize: 22,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'all 0.3s',
-                            transform: myCheck ? 'scale(1)' : 'scale(0.9)',
-                            boxShadow: myCheck ? 'var(--shadow)' : 'none',
-                          }}
-                        >
-                          {myCheck ? '💗' : '🤍'}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(p.id)}
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: '50%',
-                            background: 'none',
-                            fontSize: 14,
-                            color: 'var(--text-light)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )
-        })}
-
-        {/* Empty state */}
-        {promises.length === 0 && (
+        {/* Promise list */}
+        {filteredPromises.length > 0 ? (
+          filteredPromises.map(p => renderPromiseCard(p))
+        ) : (
           <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>📋</div>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>아직 약속이 없어요</div>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>
+              {activeTab === 'both' ? '💑' : activeTab === 'me' ? '🙋' : '💕'}
+            </div>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>
+              {activeTab === 'both' ? '함께 지킬 약속이 없어요' :
+               activeTab === 'me' ? `${myName}의 약속이 없어요` :
+               `${partnerName}의 약속이 없어요`}
+            </div>
             <div style={{ fontSize: 14, color: 'var(--text-light)' }}>
-              함께 지킬 약속을 추가해보세요! 💕
+              약속을 추가해보세요! 💕
             </div>
           </div>
         )}
@@ -279,7 +358,7 @@ export default function Promises() {
         {!showAdd ? (
           <button
             className="btn-primary"
-            onClick={() => setShowAdd(true)}
+            onClick={() => { setShowAdd(true); setNewOwner(activeTab) }}
             style={{ marginTop: 8, marginBottom: 20 }}
           >
             ➕ 약속 추가하기
@@ -295,36 +374,68 @@ export default function Promises() {
               autoFocus
               onKeyDown={e => e.key === 'Enter' && handleAdd()}
             />
-            <div style={{
-              display: 'flex',
-              gap: 8,
-              marginTop: 12,
-              flexWrap: 'wrap',
-            }}>
-              {CATEGORIES.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => setNewCategory(c.id)}
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: 20,
-                    fontSize: 13,
-                    fontWeight: 500,
-                    background: newCategory === c.id
-                      ? 'linear-gradient(135deg, var(--pink), var(--coral))'
-                      : 'var(--pink-bg)',
-                    color: newCategory === c.id ? 'white' : 'var(--text)',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  {c.icon} {c.label}
-                </button>
-              ))}
+
+            {/* Owner selector */}
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-light)', marginBottom: 6 }}>누구 약속?</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[
+                  { id: 'both', label: '💑 함께' },
+                  { id: 'me', label: `🙋 ${myName}` },
+                  { id: 'partner', label: `💕 ${partnerName}` },
+                ].map(o => (
+                  <button
+                    key={o.id}
+                    onClick={() => setNewOwner(o.id)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 10px',
+                      borderRadius: 16,
+                      fontSize: 13,
+                      fontWeight: 500,
+                      background: newOwner === o.id
+                        ? 'linear-gradient(135deg, var(--pink), var(--coral))'
+                        : 'var(--pink-bg)',
+                      color: newOwner === o.id ? 'white' : 'var(--text)',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Category selector */}
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-light)', marginBottom: 6 }}>카테고리</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {CATEGORIES.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => setNewCategory(c.id)}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: 20,
+                      fontSize: 13,
+                      fontWeight: 500,
+                      background: newCategory === c.id
+                        ? 'linear-gradient(135deg, var(--pink), var(--coral))'
+                        : 'var(--pink-bg)',
+                      color: newCategory === c.id ? 'white' : 'var(--text)',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {c.icon} {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button
                 className="btn-secondary"
-                onClick={() => { setShowAdd(false); setNewName(''); setNewCategory('etc') }}
+                onClick={() => { setShowAdd(false); setNewName(''); setNewCategory('etc'); setNewOwner('both') }}
                 style={{ flex: 1 }}
               >
                 취소

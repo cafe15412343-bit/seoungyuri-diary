@@ -13,6 +13,12 @@ const CATEGORIES = [
   { id: 'etc', label: '기타', icon: '📌' },
 ]
 
+const OWNER_TYPES = [
+  { id: 'both', label: '함께', icon: '💑' },
+  { id: 'me', label: '나만', icon: '🙋' },
+  { id: 'partner', label: '자기만', icon: '💕' },
+]
+
 function getToday() {
   return new Date().toISOString().split('T')[0]
 }
@@ -31,7 +37,7 @@ function getWeekDates() {
   return dates
 }
 
-export { CATEGORIES }
+export { CATEGORIES, OWNER_TYPES }
 
 export function usePromises() {
   const { user, couple, coupleId } = useContext(AppContext)
@@ -91,11 +97,12 @@ export function usePromises() {
     return () => unsubs.forEach(u => u())
   }, [coupleId])
 
-  const addPromise = async (name, category = 'etc') => {
+  const addPromise = async (name, category = 'etc', owner = 'both') => {
     if (!coupleId || !name.trim()) return
     await addDoc(collection(db, 'couples', coupleId, 'promises'), {
       name: name.trim(),
       category,
+      owner, // 'both', 'me' (creator), 'partner'
       createdAt: new Date(),
       createdBy: user.uid,
     })
