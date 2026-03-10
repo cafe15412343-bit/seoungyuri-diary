@@ -7,7 +7,10 @@ import Home from './pages/Home'
 import Diary from './pages/Diary'
 import Calendar from './pages/Calendar'
 import Settings from './pages/Settings'
+import RandomPick from './pages/RandomPick'
+import Album from './pages/Album'
 import TabBar from './components/TabBar'
+import CherryBlossoms from './components/CherryBlossoms'
 
 export const AppContext = createContext()
 
@@ -30,12 +33,15 @@ export default function App() {
 
   return (
     <AppContext.Provider value={{ user, couple, coupleId, generateCode, joinWithCode, loginWithCode, logout }}>
+      <CherryBlossoms />
       <div className="app-container">
         <Routes>
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Home />} />
           <Route path="/diary" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Diary />} />
+          <Route path="/pick" element={needsOnboarding ? <Navigate to="/onboarding" /> : <RandomPick />} />
           <Route path="/calendar" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Calendar />} />
+          <Route path="/album" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Album />} />
           <Route path="/settings" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Settings />} />
         </Routes>
         {!needsOnboarding && <TabBar />}

@@ -1,7 +1,10 @@
-import { useState, useContext } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { AppContext } from '../App'
 import { db } from '../firebase'
-import { doc, updateDoc } from 'firebase/firestore'
+import { doc, updateDoc, onSnapshot, setDoc } from 'firebase/firestore'
+import { defaultGreetings } from '../utils/greetings'
+
+const ANIMALS = ['🐰','🐻','🐱','🐶','🐼','🦊','🐯','🐨','🐸','🐧','🦁','🐷','🐹','🐮','🐵','🦄','🐻‍❄️','🐺','🦋','🐝']
 
 export default function Settings() {
   const { user, couple, coupleId, logout } = useContext(AppContext)
@@ -10,17 +13,52 @@ export default function Settings() {
   const [startDate, setStartDate] = useState(couple?.startDate || '')
   const [myName, setMyName] = useState(couple?.names?.[user.uid] || '')
   const [partnerName, setPartnerName] = useState(couple?.names?.[partnerUid] || '')
+  const [myAnimal, setMyAnimal] = useState(couple?.animals?.[user.uid] || '')
   const [saved, setSaved] = useState(false)
+  const [showAnimalPicker, setShowAnimalPicker] = useState(false)
+
+  // Custom greetings
+  const [greetings, setGreetings] = useState([])
+  const [showGreetings, setShowGreetings] = useState(false)
+  const [newGreeting, setNewGreeting] = useState('')
+
+  useEffect(() => {
+    if (!coupleId) return
+    const unsub = onSnapshot(doc(db, 'couples', coupleId, 'settings', 'greetings'), (snap) => {
+      if (snap.exists() && snap.data().list?.length > 0) {
+        setGreetings(snap.data().list)
+      } else {
+        setGreetings(defaultGreetings)
+      }
+    })
+    return unsub
+  }, [coupleId])
 
   const handleSave = async () => {
     const updates = {
       startDate,
       [`names.${user.uid}`]: myName.trim() || '나',
       [`names.${partnerUid}`]: partnerName.trim() || '상대방',
+      [`animals.${user.uid}`]: myAnimal,
     }
     await updateDoc(doc(db, 'couples', coupleId), updates)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  const saveGreetings = async (list) => {
+    setGreetings(list)
+    await setDoc(doc(db, 'couples', coupleId, 'settings', 'greetings'), { list })
+  }
+
+  const addGreeting = () => {
+    if (!newGreeting.trim()) return
+    saveGreetings([...greetings, newGreeting.trim()])
+    setNewGreeting('')
+  }
+
+  const removeGreeting = (idx) => {
+    saveGreetings(greetings.filter((_, i) => i !== idx))
   }
 
   return (
@@ -65,6 +103,84 @@ export default function Settings() {
           </button>
         </div>
 
+        {/* Animal Emoji Picker */}
+        <div className="card">
+          <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 15 }}>🐾 내 동물 이모지</div>
+          <div style={{ textAlign: 'center', marginBottom: 12 }}>
+            <span style={{ fontSize: 48 }}>{myAnimal || '❓'}</span>
+          </div>
+          <button
+            className="btn-secondary"
+            onClick={() => setShowAnimalPicker(!showAnimalPicker)}
+            style={{ width: '100%', marginBottom: showAnimalPicker ? 12 : 0 }}
+          >
+            {showAnimalPicker ? '닫기' : '동물 선택하기 🐾'}
+          </button>
+          {showAnimalPicker && (
+            <div className="fade-in" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+              {ANIMALS.map(a => (
+                <button
+                  key={a}
+                  onClick={() => { setMyAnimal(a); setShowAnimalPicker(false) }}
+                  style={{
+                    fontSize: 32,
+                    padding: 8,
+                    background: myAnimal === a ? 'var(--pink-bg)' : 'transparent',
+                    borderRadius: 12,
+                    border: myAnimal === a ? '2px solid var(--pink)' : '2px solid transparent',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
+          )}
+          {myAnimal && (
+            <p style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 8, textAlign: 'center' }}>
+              위의 저장하기 버튼을 눌러야 반영돼요!
+            </p>
+          )}
+        </div>
+
+        {/* Custom Greetings */}
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <span style={{ fontWeight: 600, fontSize: 15 }}>💬 인사 메시지 관리</span>
+            <button
+              onClick={() => setShowGreetings(!showGreetings)}
+              style={{ fontSize: 13, background: 'var(--pink-bg)', color: 'var(--pink)', padding: '6px 14px', borderRadius: 15, fontWeight: 500 }}
+            >
+              {showGreetings ? '닫기' : '편집'}
+            </button>
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--text-light)', marginBottom: 8 }}>
+            홈 화면에 랜덤으로 표시되는 인사 메시지 ({greetings.length}개)
+          </p>
+          {showGreetings && (
+            <div className="fade-in">
+              <div style={{ maxHeight: 200, overflowY: 'auto', marginBottom: 12 }}>
+                {greetings.map((g, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--pink-bg)', fontSize: 14 }}>
+                    <span>{g}</span>
+                    <button onClick={() => removeGreeting(i)} style={{ background: 'none', fontSize: 12, color: '#e74c3c' }}>✕</button>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  className="input-field"
+                  placeholder="새 인사 메시지"
+                  value={newGreeting}
+                  onChange={e => setNewGreeting(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <button className="btn-primary" onClick={addGreeting} style={{ width: 'auto', padding: '12px 20px' }}>+</button>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="card">
           <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 15 }}>📋 커플 코드</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--pink)', letterSpacing: 3, textAlign: 'center', padding: 12, background: 'var(--pink-bg)', borderRadius: 'var(--radius-sm)' }}>
@@ -85,7 +201,7 @@ export default function Settings() {
         </div>
 
         <div className="card" style={{ textAlign: 'center', color: 'var(--text-light)', fontSize: 13 }}>
-          커플 다이어리 v1.1 💕<br />
+          커플 다이어리 v2.0 🌸<br />
           Made with ❤️
         </div>
       </div>

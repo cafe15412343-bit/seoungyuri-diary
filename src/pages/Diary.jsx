@@ -16,6 +16,8 @@ export default function Diary() {
   const partnerUid = couple?.users?.find(u => u !== user.uid)
   const myName = couple?.names?.[user.uid] || '나'
   const partnerName = couple?.names?.[partnerUid] || '상대방'
+  const myAnimal = couple?.animals?.[user.uid] || ''
+  const partnerAnimal = couple?.animals?.[partnerUid] || ''
 
   useEffect(() => {
     if (!coupleId) return
@@ -117,7 +119,7 @@ export default function Diary() {
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <div>
                   <span style={{ fontSize: 13, fontWeight: 600, color: d.authorUid === user.uid ? 'var(--pink)' : 'var(--coral)' }}>
-                    {d.authorUid === user.uid ? `${myName} 💗` : `${partnerName} 💛`}
+                    {d.authorUid === user.uid ? `${myAnimal} ${myName} 💗` : `${partnerAnimal} ${partnerName} 💛`}
                   </span>
                   <span style={{ fontSize: 12, color: 'var(--text-light)', marginLeft: 8 }}>{d.date}</span>
                 </div>

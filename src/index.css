@@ -176,3 +176,73 @@ a {
 .fade-in {
   animation: fadeIn 0.3s ease;
 }
+
+/* 벚꽃 배경 */
+.cherry-blossoms {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.petal {
+  position: absolute;
+  top: -30px;
+  animation: petalFall linear infinite;
+  will-change: transform;
+}
+@keyframes petalFall {
+  0% {
+    transform: translateY(-10px) rotate(0deg) translateX(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(50vh) rotate(180deg) translateX(30px);
+  }
+  100% {
+    transform: translateY(105vh) rotate(360deg) translateX(-20px);
+    opacity: 0.2;
+  }
+}
+
+/* 하트 애니메이션 */
+.floating-heart {
+  position: absolute;
+  bottom: 30%;
+  animation: floatUp 1.8s ease-out forwards;
+  will-change: transform, opacity;
+}
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-60vh) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* 뽑기 이펙트 */
+.confetti {
+  position: absolute;
+  top: -20px;
+  animation: confettiFall 1.5s ease-out forwards;
+  will-change: transform;
+}
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* 앱 컨테이너가 벚꽃 위에 오도록 */
+.app-container {
+  position: relative;
+  z-index: 1;
+}
