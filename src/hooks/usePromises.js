@@ -121,26 +121,53 @@ export function usePromises() {
   const toggleCheck = async (promiseId) => {
     if (!coupleId || !user) return
     const dayRef = doc(db, 'couples', coupleId, 'promiseDaily', today)
-    const currentChecks = { ...checks }
-    const promiseChecks = currentChecks[promiseId] || {}
+    const isChecked = !!checks[promiseId]?.[user.uid]
 
-    if (promiseChecks[user.uid]) {
-      // Uncheck
-      delete promiseChecks[user.uid]
-      if (Object.keys(promiseChecks).length === 0) {
-        delete currentChecks[promiseId]
+    // Optimistic UI update — instant feedback
+    setChecks(prev => {
+      const next = { ...prev }
+      if (isChecked) {
+        // Uncheck
+        const pc = { ...(next[promiseId] || {}) }
+        delete pc[user.uid]
+        if (Object.keys(pc).length === 0) {
+          delete next[promiseId]
+        } else {
+          next[promiseId] = pc
+        }
       } else {
-        currentChecks[promiseId] = promiseChecks
+        // Check
+        next[promiseId] = {
+          ...(next[promiseId] || {}),
+          [user.uid]: new Date().toISOString()
+        }
       }
-    } else {
-      // Check
-      currentChecks[promiseId] = {
-        ...promiseChecks,
-        [user.uid]: new Date().toISOString()
-      }
-    }
+      return next
+    })
 
-    await setDoc(dayRef, { checks: currentChecks, date: today }, { merge: true })
+    // Write only this promise's check using dot notation (no overwriting others)
+    try {
+      if (isChecked) {
+        await setDoc(dayRef, {
+          date: today,
+          [`checks.${promiseId}.${user.uid}`]: null
+        }, { merge: true })
+        // Clean up null — Firestore doesn't delete with null in setDoc merge,
+        // so we use updateDoc with deleteField
+        const { deleteField } = await import('firebase/firestore')
+        await updateDoc(dayRef, {
+          [`checks.${promiseId}.${user.uid}`]: deleteField()
+        })
+      } else {
+        await setDoc(dayRef, {
+          date: today,
+          [`checks.${promiseId}.${user.uid}`]: new Date().toISOString()
+        }, { merge: true })
+      }
+    } catch (e) {
+      console.error('체크 저장 실패:', e)
+      // onSnapshot will correct the state
+    }
   }
 
   // Calculate streak for a promise
