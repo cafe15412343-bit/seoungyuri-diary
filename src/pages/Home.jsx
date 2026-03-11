@@ -336,7 +336,7 @@ export default function Home() {
 
         {/* Recent Diaries */}
         <div className="card">
-          <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 15 }}>📔 최근 다이어리</div>
+          <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 15 }}>📖 최근 기록</div>
           {recentDiaries.length > 0 ? recentDiaries.map(d => (
             <div key={d.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--pink-bg)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -346,10 +346,13 @@ export default function Home() {
                 <span style={{ fontSize: 12, color: 'var(--text-light)' }}>{d.date}</span>
               </div>
               <div style={{ fontSize: 14, lineHeight: 1.5 }}>{d.content?.substring(0, 80)}{d.content?.length > 80 ? '...' : ''}</div>
+              {(d.photoURL || d.photoURLs?.[0]) && (
+                <img src={d.photoURLs?.[0] || d.photoURL} alt="" style={{ marginTop: 8, width: '100%', borderRadius: 8, maxHeight: 120, objectFit: 'cover' }} />
+              )}
             </div>
           )) : (
             <div style={{ textAlign: 'center', color: 'var(--text-light)', padding: 20 }}>
-              아직 기록이 없어요 ✍️
+              아직 우리의 기록이 없어요 ✍️
             </div>
           )}
         </div>

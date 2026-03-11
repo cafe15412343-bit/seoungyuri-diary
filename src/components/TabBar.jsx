@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 const tabs = [
   { path: '/', icon: '🏠', label: '홈' },
-  { path: '/diary', icon: '📔', label: '다이어리' },
+  { path: '/diary', icon: '📖', label: '기록' },
   { path: '/promises', icon: '📋', label: '약속' },
   { path: '/pick', icon: '🎰', label: '뽑기' },
   { path: '/calendar', icon: '📅', label: '캘린더' },
