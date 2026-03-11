@@ -91,34 +91,24 @@ export default function Diary() {
     try {
       const photoURLs = []
 
-      // Convert photos to compressed base64 using photoPreviews (already loaded)
-      // Then try Storage upload, fallback to base64
       for (let i = 0; i < photos.length; i++) {
-        let uploaded = false
+        const photo = photos[i]
+        const fileName = `${Date.now()}_${i}_${Math.random().toString(36).slice(2)}.jpg`
+        const storageRef = ref(storage, `couples/${coupleId}/diary/${fileName}`)
 
-        // 1) Try Firebase Storage with raw file (no compression to avoid hanging)
         try {
-          const fileName = `${Date.now()}_${i}_${Math.random().toString(36).slice(2)}.jpg`
-          const storageRef = ref(storage, `couples/${coupleId}/diary/${fileName}`)
-          // Timeout: if upload takes more than 15s, abort
-          const uploadPromise = uploadBytes(storageRef, photos[i])
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), 15000)
-          )
-          await Promise.race([uploadPromise, timeoutPromise])
+          // Upload raw file to Firebase Storage
+          await uploadBytes(storageRef, photo)
           const url = await getDownloadURL(storageRef)
           photoURLs.push(url)
-          uploaded = true
         } catch (err) {
-          console.warn('Storage 실패:', err)
-        }
-
-        // 2) Fallback: use the preview we already have (photoPreviews)
-        if (!uploaded && photoPreviews[i]) {
-          photoURLs.push(photoPreviews[i])
+          console.error('Storage 업로드 실패:', err.code, err.message)
+          // Storage 실패 시 사진 없이 진행 (Firestore에 base64 넣으면 크기 초과)
+          alert(`사진 ${i+1} 업로드 실패: ${err.code || err.message}\n\nFirebase Storage 권한을 확인해주세요!`)
         }
       }
 
+      // 글 저장 (사진 URL 있으면 포함, 없으면 텍스트만)
       await addDoc(collection(db, 'couples', coupleId, 'diaries'), {
         content: content.trim(),
         date: new Date().toISOString().split('T')[0],
