@@ -19,6 +19,8 @@ export default function Home() {
   const [greeting] = useState(() => getRandomGreeting())
   const [fortune] = useState(() => getTodayFortune())
   const [heartTrigger, setHeartTrigger] = useState(0)
+  const [msgHistory, setMsgHistory] = useState([])
+  const [showMsgHistory, setShowMsgHistory] = useState(false)
   const [partnerOnline, setPartnerOnline] = useState(false)
   const [heartNotif, setHeartNotif] = useState(null)
   const [randomMemory, setRandomMemory] = useState(null)
@@ -93,6 +95,16 @@ export default function Home() {
     return unsub
   }, [coupleId])
 
+  // Message history
+  useEffect(() => {
+    if (!coupleId) return
+    const q = query(collection(db, 'couples', coupleId, 'messageHistory'), orderBy('createdAt', 'desc'), limit(20))
+    const unsub = onSnapshot(q, (snap) => {
+      setMsgHistory(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    })
+    return unsub
+  }, [coupleId])
+
   // Random memory
   useEffect(() => {
     if (!coupleId) return
@@ -112,10 +124,21 @@ export default function Home() {
   const saveMessage = async () => {
     if (!newMsg.trim()) return
     const today = new Date().toISOString().split('T')[0]
+    const msgData = { text: newMsg.trim(), date: today, updatedAt: new Date().toISOString() }
+
+    // Save to today's message (overwrite my slot only)
     await setDoc(doc(db, 'couples', coupleId, 'messages', 'today'), {
-      [user.uid]: { text: newMsg.trim(), date: today },
-      ...messages
+      [user.uid]: msgData
     }, { merge: true })
+
+    // Also save to message history for records
+    await addDoc(collection(db, 'couples', coupleId, 'messageHistory'), {
+      uid: user.uid,
+      text: newMsg.trim(),
+      date: today,
+      createdAt: new Date()
+    })
+
     setEditingMsg(false)
     setNewMsg('')
   }
@@ -324,13 +347,51 @@ export default function Home() {
           })}
           {editingMsg ? (
             <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-              <input className="input-field" placeholder="한마디를 남겨보세요" value={newMsg} onChange={e => setNewMsg(e.target.value)} style={{ flex: 1 }} />
+              <input
+                className="input-field"
+                placeholder="한마디를 남겨보세요"
+                value={newMsg}
+                onChange={e => setNewMsg(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && saveMessage()}
+                style={{ flex: 1 }}
+                autoFocus
+              />
               <button className="btn-primary" onClick={saveMessage} style={{ width: 'auto', padding: '12px 20px' }}>💕</button>
             </div>
           ) : (
             <button className="btn-secondary" onClick={() => { setEditingMsg(true); setNewMsg(messages[user.uid]?.text || '') }} style={{ marginTop: 12, width: '100%' }}>
               ✏️ 한마디 남기기
             </button>
+          )}
+
+          {/* Message History */}
+          {msgHistory.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <button
+                onClick={() => setShowMsgHistory(!showMsgHistory)}
+                style={{ fontSize: 12, color: 'var(--pink)', background: 'none', padding: 0, fontWeight: 500 }}
+              >
+                {showMsgHistory ? '▲ 기록 닫기' : `▼ 한마디 기록 보기 (${msgHistory.length})`}
+              </button>
+              {showMsgHistory && (
+                <div className="fade-in" style={{ marginTop: 8, maxHeight: 200, overflowY: 'auto' }}>
+                  {msgHistory.map(m => {
+                    const isMe = m.uid === user.uid
+                    const name = isMe ? myName : partnerName
+                    const animal = isMe ? myAnimal : partnerAnimal
+                    const ts = m.createdAt?.toDate ? m.createdAt.toDate() : new Date(m.createdAt)
+                    const dateStr = `${ts.getMonth()+1}/${ts.getDate()}`
+                    return (
+                      <div key={m.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--pink-bg)', fontSize: 13 }}>
+                        <span style={{ color: isMe ? 'var(--pink)' : 'var(--coral)', fontWeight: 600 }}>{animal} {name}</span>
+                        <span style={{ color: 'var(--text-light)', marginLeft: 6 }}>{dateStr}</span>
+                        <div style={{ marginTop: 2 }}>"{m.text}"</div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
