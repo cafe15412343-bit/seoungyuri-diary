@@ -7,7 +7,7 @@ export default function Promises() {
   const { user, couple } = useContext(AppContext)
   const {
     promises, checks, loading, today, partnerUid,
-    addPromise, deletePromise, toggleCheck, getStreak,
+    addPromise, deletePromise, toggleCheck, getEffectiveCheck, getStreak,
     getWeeklyReport, getPartnerRecentChecks,
   } = usePromises()
 
@@ -51,11 +51,11 @@ export default function Promises() {
   }, [checks, promises, partnerUid, user.uid])
 
   const handleToggle = async (promiseId) => {
-    const wasChecked = !!checks[promiseId]?.[user.uid]
-    await toggleCheck(promiseId)
+    const wasChecked = getEffectiveCheck(promiseId)
     if (!wasChecked) {
       setHeartTrigger(t => t + 1)
     }
+    await toggleCheck(promiseId)
   }
 
   const handleAdd = async () => {
@@ -100,7 +100,7 @@ export default function Promises() {
 
   const renderPromiseCard = (p) => {
     const ownerType = getOwnerType(p)
-    const myCheck = !!checks[p.id]?.[user.uid]
+    const myCheck = getEffectiveCheck(p.id)
     const partnerCheck = !!checks[p.id]?.[partnerUid]
     const streak = getStreak(p.id)
 

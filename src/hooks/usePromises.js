@@ -45,6 +45,7 @@ export function usePromises() {
   const [checks, setChecks] = useState({}) // { promiseId: { userId: checkedAt } }
   const [allChecks, setAllChecks] = useState({}) // { date: { promiseId: { userId: true } } }
   const [loading, setLoading] = useState(true)
+  const [pendingToggles, setPendingToggles] = useState({}) // { promiseId: true/false } local override
 
   const partnerUid = couple?.users?.find(u => u !== user?.uid)
   const today = getToday()
@@ -118,56 +119,50 @@ export function usePromises() {
     await updateDoc(doc(db, 'couples', coupleId, 'promises', promiseId), data)
   }
 
+  // Merge pending toggles with Firestore checks for UI
+  const getEffectiveCheck = (promiseId) => {
+    if (promiseId in pendingToggles) {
+      return pendingToggles[promiseId]
+    }
+    return !!checks[promiseId]?.[user?.uid]
+  }
+
   const toggleCheck = async (promiseId) => {
     if (!coupleId || !user) return
     const dayRef = doc(db, 'couples', coupleId, 'promiseDaily', today)
-    const isChecked = !!checks[promiseId]?.[user.uid]
+    const currentlyChecked = getEffectiveCheck(promiseId)
+    const newState = !currentlyChecked
 
-    // Optimistic UI update — instant feedback
-    setChecks(prev => {
-      const next = { ...prev }
-      if (isChecked) {
-        // Uncheck
-        const pc = { ...(next[promiseId] || {}) }
-        delete pc[user.uid]
-        if (Object.keys(pc).length === 0) {
-          delete next[promiseId]
-        } else {
-          next[promiseId] = pc
-        }
-      } else {
-        // Check
-        next[promiseId] = {
-          ...(next[promiseId] || {}),
-          [user.uid]: new Date().toISOString()
-        }
-      }
-      return next
-    })
+    // Instant UI: set pending toggle
+    setPendingToggles(prev => ({ ...prev, [promiseId]: newState }))
 
-    // Write only this promise's check using dot notation (no overwriting others)
     try {
-      if (isChecked) {
-        await setDoc(dayRef, {
-          date: today,
-          [`checks.${promiseId}.${user.uid}`]: null
-        }, { merge: true })
-        // Clean up null — Firestore doesn't delete with null in setDoc merge,
-        // so we use updateDoc with deleteField
-        const { deleteField } = await import('firebase/firestore')
-        await updateDoc(dayRef, {
-          [`checks.${promiseId}.${user.uid}`]: deleteField()
-        })
-      } else {
+      if (newState) {
+        // Check
         await setDoc(dayRef, {
           date: today,
           [`checks.${promiseId}.${user.uid}`]: new Date().toISOString()
         }, { merge: true })
+      } else {
+        // Uncheck
+        const { deleteField } = await import('firebase/firestore')
+        await setDoc(dayRef, { date: today }, { merge: true })
+        await updateDoc(dayRef, {
+          [`checks.${promiseId}.${user.uid}`]: deleteField()
+        })
       }
     } catch (e) {
       console.error('체크 저장 실패:', e)
-      // onSnapshot will correct the state
     }
+
+    // Clear pending after Firestore syncs (small delay to let onSnapshot catch up)
+    setTimeout(() => {
+      setPendingToggles(prev => {
+        const next = { ...prev }
+        delete next[promiseId]
+        return next
+      })
+    }, 2000)
   }
 
   // Calculate streak for a promise
@@ -256,6 +251,7 @@ export function usePromises() {
     deletePromise,
     updatePromise,
     toggleCheck,
+    getEffectiveCheck,
     getStreak,
     getWeeklyReport,
     getPartnerRecentChecks,
