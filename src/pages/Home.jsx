@@ -265,12 +265,15 @@ export default function Home() {
 
         {/* Today's Fortune */}
         <div className="card">
-          <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 15 }}>🔮 오늘의 커플 운세</div>
+          <div style={{ fontWeight: 600, marginBottom: 4, fontSize: 15 }}>🔮 오늘의 커플 운세</div>
+          <div style={{ fontSize: 11, color: 'var(--text-light)', marginBottom: 12 }}>
+            🦂 전갈자리 x ♉ 황소자리 | 🐰 토끼띠 x 🐂 소띠
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[
-              { label: '전체운', icon: '⭐', text: fortune.overall },
-              { label: '데이트운', icon: '💑', text: fortune.date },
-              { label: '애정운', icon: '💗', text: fortune.love },
+              { label: '전체운', icon: '⭐', text: fortune.overall, score: fortune.overallScore },
+              { label: '데이트운', icon: '💑', text: fortune.date, tip: fortune.dateTip },
+              { label: '애정운', icon: '💗', text: fortune.love, score: fortune.loveScore },
             ].map((f, i) => (
               <div key={i} style={{
                 padding: '12px 14px',
@@ -279,12 +282,40 @@ export default function Home() {
                 fontSize: 14,
                 lineHeight: 1.6,
               }}>
-                <div style={{ fontWeight: 600, color: 'var(--pink)', marginBottom: 4, fontSize: 13 }}>
-                  {f.icon} {f.label}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <span style={{ fontWeight: 600, color: 'var(--pink)', fontSize: 13 }}>
+                    {f.icon} {f.label}
+                  </span>
+                  {f.score && (
+                    <span style={{
+                      fontSize: 12, fontWeight: 700,
+                      color: f.score >= 90 ? '#e91e63' : f.score >= 80 ? '#ff6d00' : '#ffa000',
+                    }}>
+                      {f.score}점
+                    </span>
+                  )}
+                  {f.tip && (
+                    <span style={{ fontSize: 11, background: 'var(--pink)', color: 'white', padding: '2px 8px', borderRadius: 10 }}>
+                      {f.tip}
+                    </span>
+                  )}
                 </div>
                 {f.text}
               </div>
             ))}
+            {/* Daily Advice */}
+            <div style={{
+              padding: '12px 14px',
+              background: 'linear-gradient(135deg, #fff3e0, #fce4ec)',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 14,
+              lineHeight: 1.6,
+            }}>
+              <div style={{ fontWeight: 600, color: '#e65100', marginBottom: 4, fontSize: 13 }}>
+                💡 오늘의 조언
+              </div>
+              {fortune.advice}
+            </div>
           </div>
         </div>
 
