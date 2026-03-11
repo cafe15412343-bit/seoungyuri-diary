@@ -4,6 +4,7 @@ import { doc, getDoc, setDoc, collection, query, where, getDocs, onSnapshot, upd
 
 const COUPLE_CODE_KEY = 'couple-diary-code'
 const COUPLE_ID_KEY = 'couple-diary-id'
+const MY_ROLE_KEY = 'couple-diary-role' // index in users array (0 or 1)
 
 export function useCouple(user) {
   const [couple, setCouple] = useState(null)
@@ -140,8 +141,22 @@ export function useCouple(user) {
   const logout = () => {
     localStorage.removeItem(COUPLE_CODE_KEY)
     localStorage.removeItem(COUPLE_ID_KEY)
+    localStorage.removeItem(MY_ROLE_KEY)
     window.location.reload()
   }
 
-  return { couple, coupleId, loading, generateCode, joinWithCode, loginWithCode, logout }
+  // Role system: get the "effective" UID based on stored role
+  const myRole = localStorage.getItem(MY_ROLE_KEY)
+  const effectiveUid = (couple && myRole !== null && couple.users?.[parseInt(myRole)])
+    ? couple.users[parseInt(myRole)]
+    : user?.uid
+
+  const setMyRole = (roleIndex) => {
+    localStorage.setItem(MY_ROLE_KEY, String(roleIndex))
+    window.location.reload()
+  }
+
+  const needsRoleSelection = couple && couple.users?.length >= 2 && myRole === null
+
+  return { couple, coupleId, loading, generateCode, joinWithCode, loginWithCode, logout, effectiveUid, setMyRole, needsRoleSelection }
 }

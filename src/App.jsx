@@ -20,7 +20,7 @@ export const AppContext = createContext()
 
 export default function App() {
   const { user, loading: authLoading } = useAuth()
-  const { couple, coupleId, loading: coupleLoading, generateCode, joinWithCode, loginWithCode, logout } = useCouple(user)
+  const { couple, coupleId, loading: coupleLoading, generateCode, joinWithCode, loginWithCode, logout, effectiveUid, setMyRole, needsRoleSelection } = useCouple(user)
 
   if (authLoading || coupleLoading) {
     return (
@@ -35,8 +35,53 @@ export default function App() {
 
   const needsOnboarding = !couple || couple.users.length < 2
 
+  // Role selection screen
+  if (needsRoleSelection && !needsOnboarding) {
+    const names = couple?.names || {}
+    const userNames = couple?.userNames || {}
+    const users = couple?.users || []
+    return (
+      <div className="app-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div style={{ textAlign: 'center', padding: '40px 24px' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>👋</div>
+          <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>나는 누구?</h2>
+          <p style={{ color: 'var(--text-light)', marginBottom: 32, fontSize: 14 }}>
+            이 기기에서 사용할 프로필을 선택해주세요
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {users.map((uid, idx) => {
+              const name = userNames[uid]?.myName || names[uid] || `사용자 ${idx + 1}`
+              const animal = couple?.animals?.[uid] || ''
+              return (
+                <button
+                  key={uid}
+                  onClick={() => setMyRole(idx)}
+                  style={{
+                    padding: '20px 24px',
+                    borderRadius: 16,
+                    background: 'white',
+                    border: '2px solid var(--pink-light)',
+                    fontSize: 18,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {animal} {name}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Override user.uid with effectiveUid for all child components
+  const effectiveUser = user ? { ...user, uid: effectiveUid } : user
+
   return (
-    <AppContext.Provider value={{ user, couple, coupleId, generateCode, joinWithCode, loginWithCode, logout }}>
+    <AppContext.Provider value={{ user: effectiveUser, couple, coupleId, generateCode, joinWithCode, loginWithCode, logout }}>
       <CherryBlossoms />
       <div className="app-container">
         <Routes>
