@@ -1,43 +1,42 @@
 import { useState, useEffect, useContext, useRef } from 'react'
 import { AppContext } from '../App'
-import { db, storage } from '../firebase'
+import { db } from '../firebase'
 import { collection, addDoc, onSnapshot, orderBy, query, deleteDoc, doc } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-
-// Compress image before upload for speed
-function compressImage(file, maxWidth = 1200, quality = 0.7) {
-  return new Promise((resolve) => {
-    try {
-      const reader = new FileReader()
-      reader.onerror = () => resolve(file) // fallback to original
-      reader.onload = (e) => {
-        const img = new window.Image()
-        img.onerror = () => resolve(file) // fallback to original
-        img.onload = () => {
-          try {
-            const canvas = document.createElement('canvas')
-            let { width, height } = img
-            if (width > maxWidth) {
-              height = (height * maxWidth) / width
-              width = maxWidth
-            }
-            canvas.width = width
-            canvas.height = height
-            const ctx = canvas.getContext('2d')
-            ctx.drawImage(img, 0, 0, width, height)
-            canvas.toBlob((blob) => {
-              resolve(blob || file) // fallback if blob is null
-            }, 'image/jpeg', quality)
-          } catch {
-            resolve(file)
-          }
+// Compress image to small base64 for Firestore storage (no Firebase Storage needed)
+function compressToBase64(file, maxWidth = 600, quality = 0.4) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('파일 읽기 실패'))
+    reader.onload = (e) => {
+      const img = new window.Image()
+      img.onerror = () => reject(new Error('이미지 로드 실패'))
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let { width, height } = img
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width
+          width = maxWidth
         }
-        img.src = e.target.result
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+
+        // Start with target quality, reduce if too large
+        let q = quality
+        let dataUrl = canvas.toDataURL('image/jpeg', q)
+
+        // Ensure under 500KB for Firestore (multiple photos)
+        while (dataUrl.length > 500000 && q > 0.1) {
+          q -= 0.1
+          dataUrl = canvas.toDataURL('image/jpeg', q)
+        }
+
+        resolve(dataUrl)
       }
-      reader.readAsDataURL(file)
-    } catch {
-      resolve(file) // fallback to original
+      img.src = e.target.result
     }
+    reader.readAsDataURL(file)
   })
 }
 
@@ -92,19 +91,15 @@ export default function Diary() {
       const photoURLs = []
 
       for (let i = 0; i < photos.length; i++) {
-        const photo = photos[i]
-        const fileName = `${Date.now()}_${i}_${Math.random().toString(36).slice(2)}.jpg`
-        const storageRef = ref(storage, `couples/${coupleId}/diary/${fileName}`)
-
         try {
-          // Upload raw file to Firebase Storage
-          await uploadBytes(storageRef, photo)
-          const url = await getDownloadURL(storageRef)
-          photoURLs.push(url)
+          const dataUrl = await compressToBase64(photos[i])
+          photoURLs.push(dataUrl)
         } catch (err) {
-          console.error('Storage 업로드 실패:', err.code, err.message)
-          // Storage 실패 시 사진 없이 진행 (Firestore에 base64 넣으면 크기 초과)
-          alert(`사진 ${i+1} 업로드 실패: ${err.code || err.message}\n\nFirebase Storage 권한을 확인해주세요!`)
+          console.error('이미지 압축 실패:', err)
+          // 압축 실패 시 미리보기 사용
+          if (photoPreviews[i]) {
+            photoURLs.push(photoPreviews[i])
+          }
         }
       }
 
