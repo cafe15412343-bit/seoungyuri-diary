@@ -14,6 +14,7 @@ const moreTabs = [
   { path: '/pick', icon: '🎰', label: '뽑기' },
   { path: '/calendar', icon: '📅', label: '캘린더' },
   { path: '/settings', icon: '⚙️', label: '설정' },
+  { path: '/changelog', icon: '📋', label: '업데이트' },
 ]
 
 export default function TabBar() {

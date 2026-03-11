@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AppContext } from '../App'
 import { db } from '../firebase'
 import { doc, updateDoc, onSnapshot, setDoc } from 'firebase/firestore'
@@ -8,6 +9,7 @@ import { THEMES, EFFECTS, getSavedTheme, getSavedEffect, saveTheme, saveEffect }
 const ANIMALS = ['🐰','🐻','🐱','🐶','🐼','🦊','🐯','🐨','🐸','🐧','🦁','🐷','🐹','🐮','🐵','🦄','🐻‍❄️','🐺','🦋','🐝']
 
 export default function Settings() {
+  const navigate = useNavigate()
   const { user, couple, coupleId, logout } = useContext(AppContext)
   const partnerUid = couple?.users?.find(u => u !== user.uid)
 
@@ -254,8 +256,14 @@ export default function Settings() {
         </div>
 
         <div className="card" style={{ textAlign: 'center', color: 'var(--text-light)', fontSize: 13 }}>
-          커플 다이어리 v2.0 🌸<br />
-          Made with ❤️
+          커플 다이어리 v3.5 🌸<br />
+          Made with ❤️<br />
+          <button
+            onClick={() => navigate('/changelog')}
+            style={{ marginTop: 8, background: 'none', color: 'var(--pink)', fontSize: 13, textDecoration: 'underline' }}
+          >
+            📋 업데이트 내역 보기
+          </button>
         </div>
       </div>
     </div>

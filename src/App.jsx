@@ -14,6 +14,7 @@ import Album from './pages/Album'
 import Wishlist from './pages/Wishlist'
 import Letters from './pages/Letters'
 import DateExpense from './pages/DateExpense'
+import Changelog from './pages/Changelog'
 import TabBar from './components/TabBar'
 import CherryBlossoms from './components/CherryBlossoms'
 
@@ -98,6 +99,7 @@ export default function App() {
           <Route path="/letters" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Letters />} />
           <Route path="/expense" element={needsOnboarding ? <Navigate to="/onboarding" /> : <DateExpense />} />
           <Route path="/settings" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Settings />} />
+          <Route path="/changelog" element={<Changelog />} />
         </Routes>
         {!needsOnboarding && <TabBar />}
       </div>
