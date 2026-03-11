@@ -7,25 +7,37 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 // Compress image before upload for speed
 function compressImage(file, maxWidth = 1200, quality = 0.7) {
   return new Promise((resolve) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        let { width, height } = img
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width
-          width = maxWidth
+    try {
+      const reader = new FileReader()
+      reader.onerror = () => resolve(file) // fallback to original
+      reader.onload = (e) => {
+        const img = new window.Image()
+        img.onerror = () => resolve(file) // fallback to original
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas')
+            let { width, height } = img
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width
+              width = maxWidth
+            }
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')
+            ctx.drawImage(img, 0, 0, width, height)
+            canvas.toBlob((blob) => {
+              resolve(blob || file) // fallback if blob is null
+            }, 'image/jpeg', quality)
+          } catch {
+            resolve(file)
+          }
         }
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0, width, height)
-        canvas.toBlob(resolve, 'image/jpeg', quality)
+        img.src = e.target.result
       }
-      img.src = e.target.result
+      reader.readAsDataURL(file)
+    } catch {
+      resolve(file) // fallback to original
     }
-    reader.readAsDataURL(file)
   })
 }
 
@@ -79,10 +91,17 @@ export default function Diary() {
     try {
       // Upload all photos (compressed)
       const photoURLs = []
-      for (const photo of photos) {
-        const compressed = await compressImage(photo)
-        const storageRef = ref(storage, `couples/${coupleId}/diary/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`)
-        await uploadBytes(storageRef, compressed)
+      for (let i = 0; i < photos.length; i++) {
+        const photo = photos[i]
+        let fileToUpload
+        try {
+          fileToUpload = await compressImage(photo)
+        } catch {
+          fileToUpload = photo
+        }
+        const fileName = `${Date.now()}_${i}_${Math.random().toString(36).slice(2)}.jpg`
+        const storageRef = ref(storage, `couples/${coupleId}/diary/${fileName}`)
+        await uploadBytes(storageRef, fileToUpload)
         const url = await getDownloadURL(storageRef)
         photoURLs.push(url)
       }
@@ -100,7 +119,8 @@ export default function Diary() {
       setPhotoPreviews([])
       setShowWrite(false)
     } catch (e) {
-      alert('저장에 실패했어요 😢')
+      console.error('저장 실패:', e)
+      alert('저장에 실패했어요 😢 ' + (e?.message || ''))
     }
     setUploading(false)
   }
