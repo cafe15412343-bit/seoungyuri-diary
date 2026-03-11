@@ -89,28 +89,58 @@ export default function Diary() {
     if (!content.trim() && photos.length === 0) return
     setUploading(true)
     try {
-      // Upload all photos (compressed)
       const photoURLs = []
-      for (let i = 0; i < photos.length; i++) {
-        const photo = photos[i]
-        let fileToUpload
-        try {
-          fileToUpload = await compressImage(photo)
-        } catch {
-          fileToUpload = photo
+
+      if (photos.length > 0) {
+        // Try uploading photos - convert to base64 data URLs as fallback
+        for (let i = 0; i < photos.length; i++) {
+          const photo = photos[i]
+          try {
+            // Try Firebase Storage upload
+            let fileToUpload
+            try {
+              fileToUpload = await compressImage(photo)
+            } catch {
+              fileToUpload = photo
+            }
+            const fileName = `${Date.now()}_${i}_${Math.random().toString(36).slice(2)}.jpg`
+            const storageRef = ref(storage, `couples/${coupleId}/diary/${fileName}`)
+            await uploadBytes(storageRef, fileToUpload)
+            const url = await getDownloadURL(storageRef)
+            photoURLs.push(url)
+          } catch (uploadErr) {
+            console.error('Storage 업로드 실패, base64 fallback:', uploadErr)
+            // Fallback: save as base64 data URL directly in Firestore
+            const dataUrl = await new Promise((resolve) => {
+              const reader = new FileReader()
+              reader.onload = (e) => {
+                // Compress via canvas for smaller size
+                const img = new window.Image()
+                img.onload = () => {
+                  const canvas = document.createElement('canvas')
+                  let w = img.width, h = img.height
+                  const max = 800
+                  if (w > max) { h = (h * max) / w; w = max }
+                  canvas.width = w; canvas.height = h
+                  canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+                  resolve(canvas.toDataURL('image/jpeg', 0.5))
+                }
+                img.onerror = () => resolve(null)
+                img.src = e.target.result
+              }
+              reader.onerror = () => resolve(null)
+              reader.readAsDataURL(photo)
+            })
+            if (dataUrl) photoURLs.push(dataUrl)
+          }
         }
-        const fileName = `${Date.now()}_${i}_${Math.random().toString(36).slice(2)}.jpg`
-        const storageRef = ref(storage, `couples/${coupleId}/diary/${fileName}`)
-        await uploadBytes(storageRef, fileToUpload)
-        const url = await getDownloadURL(storageRef)
-        photoURLs.push(url)
       }
 
       await addDoc(collection(db, 'couples', coupleId, 'diaries'), {
         content: content.trim(),
         date: new Date().toISOString().split('T')[0],
         authorUid: user.uid,
-        photoURL: photoURLs[0] || null, // backward compat
+        photoURL: photoURLs[0] || null,
         photoURLs: photoURLs.length > 0 ? photoURLs : null,
         createdAt: new Date()
       })
@@ -120,7 +150,7 @@ export default function Diary() {
       setShowWrite(false)
     } catch (e) {
       console.error('저장 실패:', e)
-      alert('저장에 실패했어요 😢 ' + (e?.message || ''))
+      alert('저장에 실패했어요 😢\n' + (e?.code || '') + ': ' + (e?.message || ''))
     }
     setUploading(false)
   }
