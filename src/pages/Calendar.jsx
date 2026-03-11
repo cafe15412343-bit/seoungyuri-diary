@@ -14,8 +14,8 @@ export default function Calendar() {
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
   const partnerUid = couple?.users?.find(u => u !== user.uid)
-  const myName = couple?.names?.[user.uid] || '나'
-  const partnerName = couple?.names?.[partnerUid] || '상대방'
+  const myName = couple?.userNames?.[user.uid]?.myName || couple?.names?.[user.uid] || '나'
+  const partnerName = couple?.userNames?.[user.uid]?.partnerName || (partnerUid ? couple?.names?.[partnerUid] : null) || '상대방'
 
   useEffect(() => {
     if (!coupleId) return

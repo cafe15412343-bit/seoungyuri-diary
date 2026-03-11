@@ -11,8 +11,8 @@ export default function Settings() {
   const partnerUid = couple?.users?.find(u => u !== user.uid)
 
   const [startDate, setStartDate] = useState(couple?.startDate || '')
-  const [myName, setMyName] = useState(couple?.names?.[user.uid] || '')
-  const [partnerName, setPartnerName] = useState(couple?.names?.[partnerUid] || '')
+  const [myName, setMyName] = useState(couple?.userNames?.[user.uid]?.myName || couple?.names?.[user.uid] || '')
+  const [partnerName, setPartnerName] = useState(couple?.userNames?.[user.uid]?.partnerName || (partnerUid ? couple?.names?.[partnerUid] : '') || '')
   const [myAnimal, setMyAnimal] = useState(couple?.animals?.[user.uid] || '')
   const [saved, setSaved] = useState(false)
   const [showAnimalPicker, setShowAnimalPicker] = useState(false)
@@ -37,9 +37,16 @@ export default function Settings() {
   const handleSave = async () => {
     const updates = {
       startDate,
+      [`userNames.${user.uid}`]: {
+        myName: myName.trim() || '나',
+        partnerName: partnerName.trim() || '상대방',
+      },
       [`names.${user.uid}`]: myName.trim() || '나',
-      [`names.${partnerUid}`]: partnerName.trim() || '상대방',
       [`animals.${user.uid}`]: myAnimal,
+    }
+    // Also update partner's name in the old names map if partnerUid exists
+    if (partnerUid) {
+      updates[`names.${partnerUid}`] = partnerName.trim() || '상대방'
     }
     await updateDoc(doc(db, 'couples', coupleId), updates)
     setSaved(true)

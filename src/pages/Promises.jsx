@@ -19,8 +19,8 @@ export default function Promises() {
   const [celebMsg, setCelebMsg] = useState(null)
   const [activeTab, setActiveTab] = useState('both') // 'both', 'me', 'partner'
 
-  const myName = couple?.names?.[user.uid] || '나'
-  const partnerName = couple?.names?.[partnerUid] || '자기'
+  const myName = couple?.userNames?.[user.uid]?.myName || couple?.names?.[user.uid] || '나'
+  const partnerName = couple?.userNames?.[user.uid]?.partnerName || (partnerUid ? couple?.names?.[partnerUid] : null) || '자기'
   const myAnimal = couple?.animals?.[user.uid] || ''
   const partnerAnimal = couple?.animals?.[partnerUid] || ''
 
