@@ -1,7 +1,8 @@
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import { useCouple } from './hooks/useCouple'
-import { createContext } from 'react'
+import { createContext, useEffect } from 'react'
+import { applyTheme, getSavedTheme } from './utils/themes'
 import Onboarding from './pages/Onboarding'
 import Home from './pages/Home'
 import Diary from './pages/Diary'
@@ -19,6 +20,7 @@ import CherryBlossoms from './components/CherryBlossoms'
 export const AppContext = createContext()
 
 export default function App() {
+  useEffect(() => { applyTheme(getSavedTheme()) }, [])
   const { user, loading: authLoading } = useAuth()
   const { couple, coupleId, loading: coupleLoading, generateCode, joinWithCode, loginWithCode, logout, effectiveUid, setMyRole, needsRoleSelection } = useCouple(user)
 

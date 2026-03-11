@@ -3,6 +3,7 @@ import { AppContext } from '../App'
 import { db } from '../firebase'
 import { doc, updateDoc, onSnapshot, setDoc } from 'firebase/firestore'
 import { defaultGreetings } from '../utils/greetings'
+import { THEMES, EFFECTS, getSavedTheme, getSavedEffect, saveTheme, saveEffect } from '../utils/themes'
 
 const ANIMALS = ['🐰','🐻','🐱','🐶','🐼','🦊','🐯','🐨','🐸','🐧','🦁','🐷','🐹','🐮','🐵','🦄','🐻‍❄️','🐺','🦋','🐝']
 
@@ -16,6 +17,8 @@ export default function Settings() {
   const [myAnimal, setMyAnimal] = useState(couple?.animals?.[user.uid] || '')
   const [saved, setSaved] = useState(false)
   const [showAnimalPicker, setShowAnimalPicker] = useState(false)
+  const [currentTheme, setCurrentTheme] = useState(getSavedTheme)
+  const [currentEffect, setCurrentEffect] = useState(getSavedEffect)
 
   // Custom greetings
   const [greetings, setGreetings] = useState([])
@@ -186,6 +189,49 @@ export default function Settings() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Theme */}
+        <div className="card">
+          <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 15 }}>🎨 테마 색상</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            {THEMES.map(t => (
+              <button
+                key={t.id}
+                onClick={() => { setCurrentTheme(t.id); saveTheme(t.id) }}
+                style={{
+                  padding: '10px 4px', borderRadius: 12, fontSize: 12, fontWeight: 500,
+                  background: currentTheme === t.id ? t.colors['--pink'] : 'var(--pink-bg)',
+                  color: currentTheme === t.id ? 'white' : 'var(--text)',
+                  border: currentTheme === t.id ? 'none' : `2px solid ${t.colors['--pink']}40`,
+                  transition: 'all 0.2s',
+                }}
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Effects */}
+        <div className="card">
+          <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 15 }}>✨ 배경 효과</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {EFFECTS.map(e => (
+              <button
+                key={e.id}
+                onClick={() => { setCurrentEffect(e.id); saveEffect(e.id) }}
+                style={{
+                  padding: '12px 8px', borderRadius: 12, fontSize: 13, fontWeight: 500,
+                  background: currentEffect === e.id ? 'linear-gradient(135deg, var(--pink), var(--coral))' : 'var(--pink-bg)',
+                  color: currentEffect === e.id ? 'white' : 'var(--text)',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {e.icon} {e.name}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="card">
