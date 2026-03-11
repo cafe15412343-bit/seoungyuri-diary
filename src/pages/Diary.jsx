@@ -91,48 +91,31 @@ export default function Diary() {
     try {
       const photoURLs = []
 
-      if (photos.length > 0) {
-        // Try uploading photos - convert to base64 data URLs as fallback
-        for (let i = 0; i < photos.length; i++) {
-          const photo = photos[i]
-          try {
-            // Try Firebase Storage upload
-            let fileToUpload
-            try {
-              fileToUpload = await compressImage(photo)
-            } catch {
-              fileToUpload = photo
-            }
-            const fileName = `${Date.now()}_${i}_${Math.random().toString(36).slice(2)}.jpg`
-            const storageRef = ref(storage, `couples/${coupleId}/diary/${fileName}`)
-            await uploadBytes(storageRef, fileToUpload)
-            const url = await getDownloadURL(storageRef)
-            photoURLs.push(url)
-          } catch (uploadErr) {
-            console.error('Storage 업로드 실패, base64 fallback:', uploadErr)
-            // Fallback: save as base64 data URL directly in Firestore
-            const dataUrl = await new Promise((resolve) => {
-              const reader = new FileReader()
-              reader.onload = (e) => {
-                // Compress via canvas for smaller size
-                const img = new window.Image()
-                img.onload = () => {
-                  const canvas = document.createElement('canvas')
-                  let w = img.width, h = img.height
-                  const max = 800
-                  if (w > max) { h = (h * max) / w; w = max }
-                  canvas.width = w; canvas.height = h
-                  canvas.getContext('2d').drawImage(img, 0, 0, w, h)
-                  resolve(canvas.toDataURL('image/jpeg', 0.5))
-                }
-                img.onerror = () => resolve(null)
-                img.src = e.target.result
-              }
-              reader.onerror = () => resolve(null)
-              reader.readAsDataURL(photo)
-            })
-            if (dataUrl) photoURLs.push(dataUrl)
-          }
+      // Convert photos to compressed base64 using photoPreviews (already loaded)
+      // Then try Storage upload, fallback to base64
+      for (let i = 0; i < photos.length; i++) {
+        let uploaded = false
+
+        // 1) Try Firebase Storage with raw file (no compression to avoid hanging)
+        try {
+          const fileName = `${Date.now()}_${i}_${Math.random().toString(36).slice(2)}.jpg`
+          const storageRef = ref(storage, `couples/${coupleId}/diary/${fileName}`)
+          // Timeout: if upload takes more than 15s, abort
+          const uploadPromise = uploadBytes(storageRef, photos[i])
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), 15000)
+          )
+          await Promise.race([uploadPromise, timeoutPromise])
+          const url = await getDownloadURL(storageRef)
+          photoURLs.push(url)
+          uploaded = true
+        } catch (err) {
+          console.warn('Storage 실패:', err)
+        }
+
+        // 2) Fallback: use the preview we already have (photoPreviews)
+        if (!uploaded && photoPreviews[i]) {
+          photoURLs.push(photoPreviews[i])
         }
       }
 
