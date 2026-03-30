@@ -1,27 +1,29 @@
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import { useCouple } from './hooks/useCouple'
-import { createContext, useEffect } from 'react'
-import { applyTheme, getSavedTheme } from './utils/themes'
-import Onboarding from './pages/Onboarding'
-import Home from './pages/Home'
-import Diary from './pages/Diary'
-import Calendar from './pages/Calendar'
-import Settings from './pages/Settings'
-import RandomPick from './pages/RandomPick'
-import Promises from './pages/Promises'
-import Album from './pages/Album'
-import Wishlist from './pages/Wishlist'
-import Letters from './pages/Letters'
-import DateExpense from './pages/DateExpense'
-import Changelog from './pages/Changelog'
+import { createContext, useEffect, lazy, Suspense } from 'react'
+import { applyTheme, getSavedTheme, isDarkMode, applyDarkMode } from './utils/themes'
 import TabBar from './components/TabBar'
 import CherryBlossoms from './components/CherryBlossoms'
+
+// Lazy-loaded pages for code splitting
+const Onboarding = lazy(() => import('./pages/Onboarding'))
+const Home = lazy(() => import('./pages/Home'))
+const Diary = lazy(() => import('./pages/Diary'))
+const Calendar = lazy(() => import('./pages/Calendar'))
+const Settings = lazy(() => import('./pages/Settings'))
+const RandomPick = lazy(() => import('./pages/RandomPick'))
+const Promises = lazy(() => import('./pages/Promises'))
+const Album = lazy(() => import('./pages/Album'))
+const Wishlist = lazy(() => import('./pages/Wishlist'))
+const Letters = lazy(() => import('./pages/Letters'))
+const DateExpense = lazy(() => import('./pages/DateExpense'))
+const Changelog = lazy(() => import('./pages/Changelog'))
 
 export const AppContext = createContext()
 
 export default function App() {
-  useEffect(() => { applyTheme(getSavedTheme()) }, [])
+  useEffect(() => { applyTheme(getSavedTheme()); applyDarkMode(isDarkMode()) }, [])
   const { user, loading: authLoading } = useAuth()
   const { couple, coupleId, loading: coupleLoading, generateCode, joinWithCode, loginWithCode, logout, effectiveUid, setMyRole, needsRoleSelection } = useCouple(user)
 
@@ -87,6 +89,14 @@ export default function App() {
     <AppContext.Provider value={{ user: effectiveUser, couple, coupleId, generateCode, joinWithCode, loginWithCode, logout }}>
       <CherryBlossoms />
       <div className="app-container">
+        <Suspense fallback={
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 36, marginBottom: 8 }}>💕</div>
+              <div style={{ color: 'var(--text-light)', fontSize: 14 }}>로딩 중...</div>
+            </div>
+          </div>
+        }>
         <Routes>
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Home />} />
@@ -101,6 +111,7 @@ export default function App() {
           <Route path="/settings" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Settings />} />
           <Route path="/changelog" element={<Changelog />} />
         </Routes>
+        </Suspense>
         {!needsOnboarding && <TabBar />}
       </div>
     </AppContext.Provider>

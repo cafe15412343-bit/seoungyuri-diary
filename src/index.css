@@ -168,6 +168,47 @@ a {
   box-shadow: var(--shadow-lg);
 }
 
+/* Dark mode overrides */
+[data-dark="true"] body {
+  background: var(--warm-white);
+  color: #e0e0f0;
+}
+
+[data-dark="true"] .card {
+  background: var(--card-bg, #252540);
+  box-shadow: var(--card-shadow, 0 2px 12px rgba(0,0,0,0.3));
+  color: #e0e0f0;
+}
+
+[data-dark="true"] .tab-bar {
+  background: var(--tab-bg, #252540);
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.3);
+}
+
+[data-dark="true"] .input-field {
+  background: var(--input-bg, #2d2d4a);
+  color: #e0e0f0;
+}
+
+[data-dark="true"] .input-field::placeholder {
+  color: #8888aa;
+}
+
+[data-dark="true"] .modal-content {
+  background: var(--modal-bg, #252540);
+  color: #e0e0f0;
+}
+
+[data-dark="true"] .btn-secondary {
+  background: var(--card-bg, #252540);
+  color: var(--pink);
+  border-color: var(--pink-light);
+}
+
+[data-dark="true"] .page-header {
+  color: #e0e0f0;
+}
+
 /* 페이드 인 */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }

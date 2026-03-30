@@ -323,8 +323,58 @@ export default function Home() {
         {anniversaries.length > 0 && (
           <div className="card">
             <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 15 }}>💝 다가오는 기념일</div>
-            {anniversaries.map((a, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: i < anniversaries.length - 1 ? '1px solid var(--pink-bg)' : 'none' }}>
+
+            {/* Featured: Nearest anniversary as big countdown card */}
+            {(() => {
+              const nearest = anniversaries[0]
+              const isWithinWeek = nearest.daysLeft <= 7
+              const hoursLeft = nearest.daysLeft * 24
+              return (
+                <div style={{
+                  background: isWithinWeek
+                    ? 'linear-gradient(135deg, var(--pink), var(--coral))'
+                    : 'linear-gradient(135deg, var(--pink-bg), white)',
+                  borderRadius: 16,
+                  padding: '20px 16px',
+                  textAlign: 'center',
+                  marginBottom: 12,
+                  color: isWithinWeek ? 'white' : 'var(--text)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}>
+                  {isWithinWeek && (
+                    <div style={{
+                      position: 'absolute', top: 8, right: 12,
+                      background: 'rgba(255,255,255,0.25)', borderRadius: 12,
+                      padding: '2px 10px', fontSize: 11, fontWeight: 600,
+                    }}>
+                      🔥 곧이에요!
+                    </div>
+                  )}
+                  <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 4 }}>다음 기념일</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{nearest.label}</div>
+                  <div style={{ fontSize: 42, fontWeight: 800, lineHeight: 1.1 }}>
+                    D-{nearest.daysLeft}
+                  </div>
+                  {isWithinWeek && (
+                    <div style={{ fontSize: 14, marginTop: 6, opacity: 0.9 }}>
+                      ⏰ 약 {hoursLeft}시간 남음
+                    </div>
+                  )}
+                  <div style={{
+                    fontSize: 12, marginTop: 8,
+                    opacity: isWithinWeek ? 0.8 : 0.6,
+                    color: isWithinWeek ? 'white' : 'var(--text-light)',
+                  }}>
+                    {formatDate(nearest.date)}
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Remaining anniversaries in compact list */}
+            {anniversaries.slice(1).map((a, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: i < anniversaries.length - 2 ? '1px solid var(--pink-bg)' : 'none' }}>
                 <span>{a.label}</span>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 14, color: 'var(--pink)', fontWeight: 600 }}>D-{a.daysLeft}</div>

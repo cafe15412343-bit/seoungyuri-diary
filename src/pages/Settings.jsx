@@ -4,7 +4,7 @@ import { AppContext } from '../App'
 import { db } from '../firebase'
 import { doc, updateDoc, onSnapshot, setDoc } from 'firebase/firestore'
 import { defaultGreetings } from '../utils/greetings'
-import { THEMES, EFFECTS, getSavedTheme, getSavedEffect, saveTheme, saveEffect } from '../utils/themes'
+import { THEMES, EFFECTS, getSavedTheme, getSavedEffect, saveTheme, saveEffect, isDarkMode, saveDarkMode } from '../utils/themes'
 
 const ANIMALS = ['🐰','🐻','🐱','🐶','🐼','🦊','🐯','🐨','🐸','🐧','🦁','🐷','🐹','🐮','🐵','🦄','🐻‍❄️','🐺','🦋','🐝']
 
@@ -21,6 +21,7 @@ export default function Settings() {
   const [showAnimalPicker, setShowAnimalPicker] = useState(false)
   const [currentTheme, setCurrentTheme] = useState(getSavedTheme)
   const [currentEffect, setCurrentEffect] = useState(getSavedEffect)
+  const [darkMode, setDarkMode] = useState(isDarkMode)
 
   // Custom greetings
   const [greetings, setGreetings] = useState([])
@@ -191,6 +192,46 @@ export default function Settings() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Dark Mode */}
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 15 }}>🌙 다크 모드</div>
+              <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 4 }}>어두운 테마로 전환해요</div>
+            </div>
+            <button
+              onClick={() => {
+                const next = !darkMode
+                setDarkMode(next)
+                saveDarkMode(next)
+              }}
+              style={{
+                width: 56,
+                height: 30,
+                borderRadius: 15,
+                background: darkMode ? 'linear-gradient(135deg, var(--pink), var(--coral))' : '#ccc',
+                position: 'relative',
+                transition: 'background 0.3s',
+                border: 'none',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              <div style={{
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                background: 'white',
+                position: 'absolute',
+                top: 3,
+                left: darkMode ? 29 : 3,
+                transition: 'left 0.3s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+              }} />
+            </button>
+          </div>
         </div>
 
         {/* Theme */}

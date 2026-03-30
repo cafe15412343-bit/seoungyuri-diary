@@ -107,6 +107,7 @@ export const THEMES = [
 
 const THEME_KEY = 'couple-diary-theme'
 const EFFECT_KEY = 'couple-diary-effect'
+const DARKMODE_KEY = 'couple-diary-darkmode'
 
 export function getSavedTheme() {
   return localStorage.getItem(THEME_KEY) || 'pink'
@@ -131,6 +132,51 @@ export function applyTheme(themeId) {
   Object.entries(theme.colors).forEach(([key, value]) => {
     root.style.setProperty(key, value)
   })
+  // Re-apply dark mode overlay if active
+  if (isDarkMode()) {
+    applyDarkMode(true)
+  }
+}
+
+// Dark mode
+const DARK_OVERRIDES = {
+  '--warm-white': '#1a1a2e',
+  '--card-bg': '#252540',
+  '--card-shadow': '0 2px 12px rgba(0,0,0,0.3)',
+  '--tab-bg': '#252540',
+  '--input-bg': '#2d2d4a',
+  '--modal-bg': '#252540',
+  '--border-color': '#3a3a5c',
+}
+
+export function isDarkMode() {
+  return localStorage.getItem(DARKMODE_KEY) === 'true'
+}
+
+export function saveDarkMode(enabled) {
+  localStorage.setItem(DARKMODE_KEY, String(enabled))
+  applyDarkMode(enabled)
+}
+
+export function applyDarkMode(enabled) {
+  const root = document.documentElement
+  if (enabled) {
+    root.setAttribute('data-dark', 'true')
+    Object.entries(DARK_OVERRIDES).forEach(([key, value]) => {
+      root.style.setProperty(key, value)
+    })
+  } else {
+    root.removeAttribute('data-dark')
+    // Remove dark overrides and re-apply current theme cleanly
+    Object.keys(DARK_OVERRIDES).forEach(key => {
+      root.style.removeProperty(key)
+    })
+    // Re-apply theme to restore warm-white etc
+    const theme = THEMES.find(t => t.id === getSavedTheme()) || THEMES[0]
+    Object.entries(theme.colors).forEach(([key, value]) => {
+      root.style.setProperty(key, value)
+    })
+  }
 }
 
 export const EFFECTS = [
