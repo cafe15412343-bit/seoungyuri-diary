@@ -11,6 +11,7 @@ const mainTabs = [
 const moreTabs = [
   { path: '/wishlist', icon: '🎯', label: '위시리스트' },
   { path: '/letters', icon: '💌', label: '편지함' },
+  { path: '/monthly', icon: '📊', label: '월별요약' },
   { path: '/pick', icon: '🎰', label: '뽑기' },
   { path: '/calendar', icon: '📅', label: '캘린더' },
   { path: '/settings', icon: '⚙️', label: '설정' },

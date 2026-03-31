@@ -19,6 +19,7 @@ const Wishlist = lazy(() => import('./pages/Wishlist'))
 const Letters = lazy(() => import('./pages/Letters'))
 const DateExpense = lazy(() => import('./pages/DateExpense'))
 const Changelog = lazy(() => import('./pages/Changelog'))
+const MonthlySummary = lazy(() => import('./pages/MonthlySummary'))
 
 export const AppContext = createContext()
 
@@ -109,6 +110,7 @@ export default function App() {
           <Route path="/letters" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Letters />} />
           <Route path="/expense" element={needsOnboarding ? <Navigate to="/onboarding" /> : <DateExpense />} />
           <Route path="/settings" element={needsOnboarding ? <Navigate to="/onboarding" /> : <Settings />} />
+          <Route path="/monthly" element={needsOnboarding ? <Navigate to="/onboarding" /> : <MonthlySummary />} />
           <Route path="/changelog" element={<Changelog />} />
         </Routes>
         </Suspense>
